@@ -1,0 +1,19 @@
+{
+    "configurations": [
+        {
+            "name": "win",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "D:\\OpenCV\\opencv\\build\\include",
+                "D:\\OpenCV\\opencv\\build\\include\\opencv2",
+                "D:\\lab_1039\\Spring_CW\\image_processing\\source\\"
+            ],
+            "defines": [],
+            "compilerPath": "D:\\MinGW\\mingw64\\bin\\gcc.exe",
+            "cStandard": "c11",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "clang-x64"
+        }
+    ],
+    "version": 4
+}
