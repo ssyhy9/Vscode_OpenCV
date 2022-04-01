@@ -24,15 +24,13 @@ int vehicle_init(void);
 float PID(int lineDist);
 void standardMove(float output);
 void stopMotor(void);
-void left_sharp_turn(int cnt);
-void right_rect_turn(void);
-void left_rect_turn(void);
+void right_sharp_turn(void);
+void left_sharp_turn(void);
 
-const float Kp = 0.080, Ki = 0.00, Kd = 0.0;    //encoder output
+const float Kp = 0.07, Ki = 0.00, Kd = 0.0;    //encoder output
 float leftMotorSpeed = 0; // Variables to hold the current motor speed (+-100%)
 float rightMotorSpeed = 0;
 int robot;
-int cnt = 1;
 
 VideoCapture capture;
 
@@ -52,6 +50,8 @@ int main(void)
     capture.set(CAP_PROP_FRAME_WIDTH, 640);
     capture.set(CAP_PROP_FRAME_HEIGHT, 480);
 
+    int cnt;
+
     while(1)
     {
         capture.read(img); //640 480
@@ -60,15 +60,15 @@ int main(void)
    //     imshow("Ori IMG", img);
 
 
-    cvtColor(img, imgGRAY, COLOR_BGR2GRAY);
+        cvtColor(img, imgGRAY, COLOR_BGR2GRAY);
 
-    error = draw_centerPoints(imgGRAY, img);
+        error = draw_centerPoints(imgGRAY, img);
 
-    if(turn_flag == 0){
-        output = PID(error);
-        standardMove(output);
-    }
-    cout << "CNTTTTT: " << cnt << endl;
+        if(turn_flag == 0){
+            output = PID(error);
+            standardMove(output);
+        }
+
         waitKey(1);
     }
 
@@ -79,16 +79,13 @@ int main(void)
 
 
 float draw_centerPoints(Mat gray, Mat im){
-
     int right_num = 0, left_num = 0;
-    int num = 0;
-    int colour = 0;
     Mat binary;
     Size dsize=Size(160,100);
     resize(im,im,dsize,0,0,INTER_AREA);
 
     cvtColor(im, gray, COLOR_BGR2GRAY);
-    threshold(gray, binary, 65, 255, THRESH_BINARY_INV);
+    threshold(gray, binary, 60, 255, THRESH_BINARY_INV);
 
     imshow("Img Bi", binary);
 
@@ -105,24 +102,11 @@ float draw_centerPoints(Mat gray, Mat im){
         }
 
         if (range == 0){
-            for(int j = 20; j < 50; j++){
-                for(int k = 0; k < binary.cols; k++){
-                    colour = (int)binary.at<uchar>(j, k);
-                    if(colour == 255){
-                        num++;
-                    }
-                }
-            }
-            if(num > 50){
-                x = 80;
-                return 0;
-            }
-            else{
-                left_sharp_turn(cnt);
-                cnt++;
-            }
+            left_sharp_turn();
+            turn_flag = 1;
+            cout << "Turn Flag:" << turn_flag << endl;
         }
-        else{
+        else {
             x = x / range;
             stop_flag = 0;
             turn_flag = 0;
@@ -137,21 +121,13 @@ float draw_centerPoints(Mat gray, Mat im){
                  }
             }
 
-            for (int n = x; n < 160; n++){
-                 int intensity2 = binary.at<uchar>(row,n);
+            for (int n = x;n < 160;n++){
+                 int intensity2=binary.at<uchar>(row,n);
                  if(intensity2 < 100) {
                      right++;
                  }
             }
         }
-            cout << "left" << left << "||" << "right" << right << endl;
-
-            if(right < 100){
-                right_rect_turn();
-            }
-            if(left < 100){
-                left_rect_turn();
-            }
 
         real_error = left - right;
    //         cout << "Real Error" << real_error << endl;
@@ -214,8 +190,8 @@ void standardMove(float output){
         if(leftMotorSpeed < 0)
         {
             leftMotorSpeed = leftMotorSpeed * 1.2;
-            if (rightMotorSpeed > 80) rightMotorSpeed = 80;
-            if (leftMotorSpeed < -60) leftMotorSpeed = -60;
+            if (rightMotorSpeed > 70) rightMotorSpeed = 70;
+            if (leftMotorSpeed < -80) leftMotorSpeed = -80;
             serialPrintf(robot, "#Baffrr %03d %03d %03d %03d", (int)rightMotorSpeed, (int)rightMotorSpeed, -(int)leftMotorSpeed, -(int)leftMotorSpeed);
         }
 
@@ -244,47 +220,14 @@ void stopMotor(void){
 
 // }
 
-void left_sharp_turn(int cnt){
-    if(cnt % 2 == 1){
-        capture.release();
-        serialPrintf(robot, "#Baffrr %03d %03d %03d %03d", 50, 50, 40, 40);
-        delay(500);
-        serialPrintf(robot, "#Baffff %03d %03d %03d %03d", 0, 0, 0, 0);
-        delay(1000);
-        capture.open(0);
-    }
-    else{
-        capture.release();
-        serialPrintf(robot, "#Baffrr %03d %03d %03d %03d", 70, 70, 20, 20);
-        delay(500);
-        serialPrintf(robot, "#Baffff %03d %03d %03d %03d", 0, 0, 0, 0);
-        delay(1000);
-        capture.open(0);
-    }
-}
-
-void right_rect_turn(){
-    cout << "righttttttttttttttttttttttttt!" << endl;
+void left_sharp_turn(void){
     capture.release();
-    serialPrintf(robot, "#Barrff %03d %03d %03d %03d", 20, 20, 65, 65);
-    delay(800);
-    serialPrintf(robot, "#Baffff %03d %03d %03d %03d", 0, 0, 0, 0);
-    delay(5000);
-    capture.open(0);   
-    
-}
-
-void left_rect_turn(){
-    cout << "leftTTTTTTTTTTTTTTTTTTTTTTTTTTTT" << endl;
-    capture.release();
-    serialPrintf(robot, "#Baffrr %03d %03d %03d %03d", 65, 65, 20, 20);
-    delay(800);
-    serialPrintf(robot, "#Baffff %03d %03d %03d %03d", 0, 0, 0, 0);
-    delay(5000);
+    serialPrintf(robot, "#Baffrr %03d %03d %03d %03d", 50, 50, 10, 10);
+    delay(500);
+     serialPrintf(robot, "#Baffff %03d %03d %03d %03d", 0, 0, 0, 0);
+     delay(5000);
     capture.open(0);
 }
-
-
 
 
 

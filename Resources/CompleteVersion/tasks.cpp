@@ -1,7 +1,26 @@
+
+#include <iostream>
+#include<opencv2/opencv.hpp>
+#include<opencv2/highgui.hpp>
+#include<opencv2/imgproc.hpp>
+
+#include <sys/time.h>
+#include <wiringSerial.h>
+#include <wiringPi.h>           //WiringPi headers
+#include <lcd.h>                //LCD headers from WiringPi
+#include <stdio.h>              //Needed for the printf function below
+
+#include <wiringPi.h>
+#include <softPwm.h>
+
+using namespace cv;
+using namespace std;
+
 #include "tasks.h"
+#include "main.h"
 
 int active_task(int code,Mat camera){
-    
+
     if( code==1 ) count_shape(camera);//cheat(1);
     else if (code == 2)count_shape(camera);//cheat(2);
     else if (code == 3)count_shape(camera);//cheat(3);
@@ -13,7 +32,7 @@ int active_task(int code,Mat camera){
     else if (code == 9 ) task_led();//Alarm
     else if (code == 10 ) task_dissensor();//MeasureDistance
     else if (code == 11 ) traffic_light();//traffic light
-    else if (code == 12 ) task_kickball(); / /kick ball
+    else if (code == 12 ) task_kickball(); //kick ball
 }
 
 //kick ball
@@ -89,7 +108,7 @@ int task_dissensor(void){
     lcdPrintf(lcd, "%0.2f cm", dis);
     delay(5000);
     lcdClear(lcd);
-    
+
     backward = time2.tv_sec - time1.tv_sec;
 
     serialPrintf(robot, "#Barrrr 030 030 033 033");
@@ -144,7 +163,7 @@ int task_spaker(void){
     system("madplay /home/pi/Desktop/tiger.mp3");
 	delay(8000);
 	system("killall /home/pi/Desktop/tiger.mp3 madplay");
-	
+
     cout<<"audio"<<endl;
 
 }
@@ -199,14 +218,14 @@ int count_shape(Mat frame){
     vector<Point> point;
     vector<Vec4i> hireachy;
     findContours(frame2, contours, hireachy, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE, Point());
-    vector<vector<Point>> contours_poly(contours.size()); 
+    vector<vector<Point>> contours_poly(contours.size());
 
     for (int i=0;i<contours.size();i++){
-    int area = contourArea(contours[i]); 
+    int area = contourArea(contours[i]);
 
-    if( contourArea(contours[i]) > area_max)  {   
+    if( contourArea(contours[i]) > area_max)  {
             area_max=contourArea(contours[i]);
-             t=i; 
+             t=i;
     }
     approxPolyDP(contours[i],contours_poly[i],30,true);
     drawContours(dstlmg,contours_poly,i,Scalar(0,255,255),2,8);
@@ -215,10 +234,10 @@ int count_shape(Mat frame){
     Point2f AffinePoints0[4] = { Point2f(0, 0), Point2f(width,0), Point2f(0,height), Point2f(width, height) };
     Mat dst_perspective = PerspectiveTrans(frame, AffinePoints1, AffinePoints0);
     resize(dst_perspective,image3,Size(320,240),0,0,INTER_AREA);
-    
+
     getContours(image3);
    }
-   
+
 void getContours(Mat src) {
 
     int Tri_num=0,Rect_num=0,Cir_num=0;
@@ -231,7 +250,7 @@ void getContours(Mat src) {
     vector<Vec4i> hireachy;
     findContours(binary, contours, hireachy, RETR_TREE, CHAIN_APPROX_SIMPLE);
     vector<vector<Point>>conPoly(contours.size());
-    
+
     for(int i=0; i<contours.size();i++) {
 
         int area= contourArea(contours[i]);
@@ -277,9 +296,9 @@ void getContours(Mat src) {
 
 }
 int cheat(int num) {
-    
+
     int Tri_num=0,Rect_num=0,Cir_num=0;
-    
+
     if ( num == 1 ){
     Tri_num=3;Rect_num=2;Cir_num=3;
     }
@@ -303,7 +322,7 @@ int cheat(int num) {
     lcdPosition(lcd,4,1);
     lcdPrintf(lcd,"%d",Cir_num);
     delay(5000);
-    lcdClear(lcd);  
+    lcdClear(lcd);
 }
 
 //traffic  light
@@ -342,37 +361,37 @@ int light(Mat frame){
   }
 }
   else { roi.x = roi.y = roi.width = roi.height = 0; }
-  
+
              cout<<"light_area"<<area<<endl;
 
-            if( area > 800) {         
+            if( area > 800) {
               num=1;
               cout<<"go"<<endl;
         }
              else{
              num=2;
-             cout<<"stop"<<endl;      
+             cout<<"stop"<<endl;
         }
-        
+
       return num;
 }
 int traffic_light(void) {
 
     Mat frame;
     int num;
-    
+
     lcdClear(lcd);
     lcdPosition(lcd,0,0);
     lcdPuts(lcd,"Traffic light");
     delay(5000);
     lcdClear(lcd);
-    
+
     capture.release();
     capture.open(0);
 
     while(1) {
         capture.read(frame);
-        
+
         transpose(frame,frame);
         flip(frame,frame,1);
         transpose(frame,frame);

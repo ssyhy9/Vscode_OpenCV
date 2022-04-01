@@ -1,10 +1,29 @@
+
+#include <iostream>
+#include<opencv2/opencv.hpp>
+#include<opencv2/highgui.hpp>
+#include<opencv2/imgproc.hpp>
+
+#include <sys/time.h>
+#include <wiringSerial.h>
+#include <wiringPi.h>           //WiringPi headers
+#include <lcd.h>                //LCD headers from WiringPi
+#include <stdio.h>              //Needed for the printf function below
+
+#include <wiringPi.h>
+#include <softPwm.h>
+
+using namespace cv;
+using namespace std;
+
 #include "tasks.h"
+#include "main.h"
 
 int active_task(int code,Mat camera){
-    
-    if( code==1 ) count_shape(camera);//cheat(1);
-    else if (code == 2)count_shape(camera);//cheat(2);
-    else if (code == 3)count_shape(camera);//cheat(3);
+
+    if( code==1 ) count_shape(camera);
+    else if (code == 2)count_shape(camera);
+    else if (code == 3)count_shape(camera);
     else if (code == 4) cout<<"Shortcut_blue"<<endl;
     else if (code == 5) cout<<"Shortcut_Green"<<endl;
     else if (code == 6) cout<<"Shortcut_Red"<<endl;
@@ -13,37 +32,41 @@ int active_task(int code,Mat camera){
     else if (code == 9 ) task_led();//Alarm
     else if (code == 10 ) task_dissensor();//MeasureDistance
     else if (code == 11 ) traffic_light();//traffic light
-    else if (code == 12 ) task_kickball(); / /kick ball
+    else if (code == 12 ) task_kickball(); //kick ball
 }
+
 
 //kick ball
 int task_kickball(void){
 
-	puts("kick ball");
-	lcdClear(lcd);
-	lcdPosition(lcd,0,0);
+ cout<<"Kick ball"<<endl;
+ lcdClear(lcd);
+ lcdPosition(lcd,0,0);
     lcdPuts(lcd, "Task: ");
     lcdPosition(lcd,0,1);
     lcdPuts(lcd, "Kick football");
     delay(5000);
     lcdClear(lcd);
 
-	//vehicle kick
-	serialPrintf(robot, "#Barrff 020 020 020 020");
-    delay(1000);
-	serialPrintf(robot, "#ha");
-	delay(500);
-	serialPrintf(robot, "#Baffff 030 030 033 033");
-	delay(2000);
-	serialPrintf(robot, "#ha");
-	delay(500);
-	serialPrintf(robot, "#Barrrr 030 030 033 033");
-	delay(2000);
-	serialPrintf(robot, "#Baffrr 020 020 020 020");
-    delay(1000);
-	serialPrintf(robot, "#ha");
+ //vehicle kick
+ serialPrintf(robot, "#Barrff 070 070 074 074");
+    delay(1600);
+ serialPrintf(robot, "#ha");
+ delay(500);
+ serialPrintf(robot, "#Barrrr 030 030 033 033");
+ delay(2000);
+ serialPrintf(robot, "#ha");
+ delay(500);
+ serialPrintf(robot, "#Baffff 030 030 033 033");
+ delay(2000);
+ serialPrintf(robot, "#ha");
+ delay(500);
+ serialPrintf(robot, "#Baffrr 070 070 074 074");
+    delay(1600);
+ serialPrintf(robot, "#ha");
+ cout<<"Kick ball finish"<<endl;
 
-	return 0;
+ return 0;
 }
 
 //approach and stop
@@ -52,21 +75,22 @@ int task_dissensor(void){
     float dis;
     struct timeval time1;
     struct timeval time2;
-    long backward;
-    cout<<"task: measure"<<endl;
+    float backward;
+    cout<<"approach and stop"<<endl;
 
     ultraInit();
 
     lcdClear(lcd);
     lcdPosition(lcd,0,0);
-    lcdPuts(lcd, "Task: ");
+    lcdPuts(lcd, "Task: Approach");
     lcdPosition(lcd,0,1);
-    lcdPuts(lcd, "Approach and stop");
+    lcdPuts(lcd, "and stop");
     delay(5000);
     lcdClear(lcd);
 
-	serialPrintf(robot, "#Baffff 030 030 033 033");
+	serialPrintf(robot, "#Baffff 015 015 017 017");
 	gettimeofday(&time1, NULL);
+	cout<<"1111111"<<endl;
 
     do{
         dis = disMeasure();
@@ -75,26 +99,33 @@ int task_dissensor(void){
         lcdPuts(lcd, "Distance: ");  //Print the text on the LCD at the current cursor postion
         lcdPosition(lcd,0,1);           //Position cursor on the first line in the first column1
         lcdPrintf(lcd, "%0.2f cm", dis);  //Print the text on the LCD at the current cursor postion
-        delay(40);
-        lcdClear(lcd);
-    }while(dis >= 5) ;
+        delay(30);
+//        lcdClear(lcd);
+    }while(dis >= 6) ;
 
 	serialPrintf(robot, "#ha");
 	gettimeofday(&time2, NULL);
 
-    dis = disMeasure();
+//    dis = disMeasure();
     lcdPosition(lcd,0,0);
     lcdPuts(lcd, "Distance: ");  //Print the text on the LCD at the current cursor postion
     lcdPosition(lcd,0,1);           //Position cursor on the first line in the first column1
     lcdPrintf(lcd, "%0.2f cm", dis);
+
     delay(5000);
     lcdClear(lcd);
-    
+
     backward = time2.tv_sec - time1.tv_sec;
 
-    serialPrintf(robot, "#Barrrr 030 030 033 033");
+    serialPrintf(robot, "#Barrrr 015 015 017 017");
+    backward = backward * 1000 - 300;
+    cout<<"time:  "<<backward<<endl;
     delay(backward);
     serialPrintf(robot, "#ha");
+    cout<<"approach and stop finish"<<endl;
+
+
+    delay(5000);
 
     return 0;
 }
@@ -103,6 +134,7 @@ void ultraInit(void){
     pinMode(Echo, INPUT);
     pinMode(Trig, OUTPUT);
 }
+
 float disMeasure(void) {
 
     struct timeval tv1;
@@ -114,19 +146,20 @@ float disMeasure(void) {
     delayMicroseconds(2);
 
     digitalWrite(Trig, HIGH);
-    delayMicroseconds(10);      //发出超声波脉冲
+    delayMicroseconds(10);
     digitalWrite(Trig, LOW);
 
     while(!(digitalRead(Echo) == 1));
-    gettimeofday(&tv1, NULL);           //获取当前时间
+    gettimeofday(&tv1, NULL);
 
     while(!(digitalRead(Echo) == 0));
-    gettimeofday(&tv2, NULL);           //获取当前时间
+    gettimeofday(&tv2, NULL);
 
-    start = tv1.tv_sec * 1000000 + tv1.tv_usec;   //微秒级的时间
+    start = tv1.tv_sec * 1000000 + tv1.tv_usec;
     stop  = tv2.tv_sec * 1000000 + tv2.tv_usec;
 
-    dis = (float)(stop - start) / 1000000 * 34000 / 2;  //求出距离
+
+    dis = (float)(stop - start) / 1000000 * 34000 / 2;
 
     return dis;
 }
@@ -134,6 +167,7 @@ float disMeasure(void) {
 //play music
 int task_spaker(void){
 
+    cout<<"audio"<<endl;
     lcdClear(lcd);
     lcdPosition(lcd,0,0);
     lcdPuts(lcd, "Task: ");
@@ -141,17 +175,17 @@ int task_spaker(void){
     lcdPuts(lcd, "Play music");
     delay(5000);
     lcdClear(lcd);
-    system("madplay /home/pi/Desktop/tiger.mp3");
-	delay(8000);
+    system("madplay /home/pi/Desktop/piano.mp3");
+	delay(6000);
 	system("killall /home/pi/Desktop/tiger.mp3 madplay");
-	
-    cout<<"audio"<<endl;
+
+    cout<<"audio finish"<<endl;
 
 }
 
 //led
 int task_led(void){
-
+    cout<<"LED"<<endl;
     pinMode(RedPin,OUTPUT);
     pinMode(BluePin,OUTPUT);
 
@@ -171,6 +205,7 @@ int task_led(void){
         delay(1000);
         digitalWrite(BluePin,LOW);
         }
+    cout<<"LED finish"<<endl;
 }
 
 //count shape
@@ -183,7 +218,7 @@ int count_shape(Mat frame){
 
      int height=frame.rows;
      int width=frame.cols;
-
+   cout<<"Count Shape"<<endl;
     lcdClear(lcd);
     lcdPosition(lcd,0,0);
     lcdPuts(lcd, "Task: ");
@@ -193,20 +228,20 @@ int count_shape(Mat frame){
     lcdClear(lcd);
 
     cvtColor(frame, frame1, COLOR_BGR2HSV);
-    inRange(frame1,Scalar(148,94,86),Scalar(168,255,255),frame2);
+    inRange(frame1,Scalar(150,100,81),Scalar(170,255,255),frame2);
 
     vector<vector<Point>> contours;
     vector<Point> point;
     vector<Vec4i> hireachy;
     findContours(frame2, contours, hireachy, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE, Point());
-    vector<vector<Point>> contours_poly(contours.size()); 
+    vector<vector<Point>> contours_poly(contours.size());
 
     for (int i=0;i<contours.size();i++){
-    int area = contourArea(contours[i]); 
+    int area = contourArea(contours[i]);
 
-    if( contourArea(contours[i]) > area_max)  {   
+    if( contourArea(contours[i]) > area_max)  {
             area_max=contourArea(contours[i]);
-             t=i; 
+             t=i;
     }
     approxPolyDP(contours[i],contours_poly[i],30,true);
     drawContours(dstlmg,contours_poly,i,Scalar(0,255,255),2,8);
@@ -215,10 +250,11 @@ int count_shape(Mat frame){
     Point2f AffinePoints0[4] = { Point2f(0, 0), Point2f(width,0), Point2f(0,height), Point2f(width, height) };
     Mat dst_perspective = PerspectiveTrans(frame, AffinePoints1, AffinePoints0);
     resize(dst_perspective,image3,Size(320,240),0,0,INTER_AREA);
-    
+
     getContours(image3);
+    cout<<"Count shape finish"<<endl;
    }
-   
+
 void getContours(Mat src) {
 
     int Tri_num=0,Rect_num=0,Cir_num=0;
@@ -231,11 +267,11 @@ void getContours(Mat src) {
     vector<Vec4i> hireachy;
     findContours(binary, contours, hireachy, RETR_TREE, CHAIN_APPROX_SIMPLE);
     vector<vector<Point>>conPoly(contours.size());
-    
+
     for(int i=0; i<contours.size();i++) {
 
         int area= contourArea(contours[i]);
-       // cout<<"shape_area:"<<area<<endl;
+         cout<<"shape_area:"<<area<<endl;
 
         if( area > 100) {
 
@@ -276,35 +312,7 @@ void getContours(Mat src) {
     lcdClear(lcd);
 
 }
-int cheat(int num) {
-    
-    int Tri_num=0,Rect_num=0,Cir_num=0;
-    
-    if ( num == 1 ){
-    Tri_num=3;Rect_num=2;Cir_num=3;
-    }
-    if ( num == 2 ){
-    Tri_num=2;Rect_num=2;Cir_num=2;
-    }
-    if ( num == 3 ){
-    Tri_num=2;Rect_num=1;Cir_num=2;
-    }
-    lcdClear(lcd);
-    lcdPosition(lcd,0,0);
-    lcdPuts(lcd, "T:");
-    lcdPosition(lcd,4,0);
-    lcdPrintf(lcd,"%d",Tri_num);
-    lcdPosition(lcd,6,0);
-    lcdPuts(lcd, "R:");
-    lcdPosition(lcd,9,0);
-    lcdPrintf(lcd,"%d",Rect_num);
-    lcdPosition(lcd,0,1);
-    lcdPuts(lcd, "C:");
-    lcdPosition(lcd,4,1);
-    lcdPrintf(lcd,"%d",Cir_num);
-    delay(5000);
-    lcdClear(lcd);  
-}
+
 
 //traffic  light
 int light(Mat frame){
@@ -316,13 +324,13 @@ int light(Mat frame){
  Mat kernel = getStructuringElement(MORPH_RECT, Size(3, 3), Point(-1, -1));
  Mat kernel_dilite = getStructuringElement(MORPH_RECT, Size(7, 7), Point(-1, -1));
   //imshow("traffic_input", frame);
-  //筛选出绿色
+
   inRange(frame, Scalar(0, 127, 0), Scalar(120, 255, 120), dst);
 
-  //开操作去噪点
+
   morphologyEx(dst, dst, MORPH_OPEN, kernel, Point(-1, -1), 1);
 
-  //膨胀操作把绿灯具体化的显示出来
+
   dilate(dst, dst, kernel_dilite, Point(-1, -1), 2);
   //imshow("traffic_output", dst);
 
@@ -342,37 +350,39 @@ int light(Mat frame){
   }
 }
   else { roi.x = roi.y = roi.width = roi.height = 0; }
-  
+
              cout<<"light_area"<<area<<endl;
 
-            if( area > 800) {         
+            if( area > 200) {
               num=1;
               cout<<"go"<<endl;
         }
              else{
              num=2;
-             cout<<"stop"<<endl;      
+             cout<<"stop"<<endl;
         }
-        
+
       return num;
 }
 int traffic_light(void) {
 
     Mat frame;
     int num;
-    
+    cout<<"Traffic light"<<endl;
     lcdClear(lcd);
     lcdPosition(lcd,0,0);
     lcdPuts(lcd,"Traffic light");
     delay(5000);
     lcdClear(lcd);
-    
+
     capture.release();
     capture.open(0);
+    capture.set(CAP_PROP_FRAME_WIDTH, 1280);
+    capture.set(CAP_PROP_FRAME_HEIGHT, 1024);
 
     while(1) {
         capture.read(frame);
-        
+
         transpose(frame,frame);
         flip(frame,frame,1);
         transpose(frame,frame);
@@ -384,5 +394,6 @@ int traffic_light(void) {
         break;
       }
     }
+    cout<<"Traffic light finish"<<endl;
     //go
 }

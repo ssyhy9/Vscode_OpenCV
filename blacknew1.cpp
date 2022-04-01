@@ -27,20 +27,25 @@ void stopMotor(void);
 void left_sharp_turn(int cnt);
 void right_rect_turn(void);
 void left_rect_turn(void);
+void left_turn();
 
-const float Kp = 0.080, Ki = 0.00, Kd = 0.0;    //encoder output
+const float Kp = 0.0295, Ki = 0.00, Kd = 0.0;    //encoder output
 float leftMotorSpeed = 0; // Variables to hold the current motor speed (+-100%)
 float rightMotorSpeed = 0;
 int robot;
-int cnt = 1;
+int turn_cnt = 1;
 
 VideoCapture capture;
 
 int turn_flag, stop_flag;
 
+int hmin = 0, smin = 0, vmin = 0;
+int hmax = 179, smax = 132, vmax = 76;
+
 int main(void)
 {
-    Mat img, imgGRAY;
+    Mat img, imgHSV;
+    Mat mask;
     int error;
     float output;
 
@@ -48,27 +53,27 @@ int main(void)
 
     wiringPiSetup();         //Initialise WiringPi
     capture.open(0);         //640*480
-//    capture.set(CAP_PROP_FPS, 60);
     capture.set(CAP_PROP_FRAME_WIDTH, 640);
     capture.set(CAP_PROP_FRAME_HEIGHT, 480);
 
     while(1)
     {
         capture.read(img); //640 480
-   //    cout << "Original size" << img.size() << endl;
 
-   //     imshow("Ori IMG", img);
+        Size dsize=Size(160,100);
+        resize(img,img,dsize,0,0,INTER_AREA);
+        cvtColor(img, imgHSV, COLOR_BGR2HSV);
 
+        Scalar lower(hmin, smin, vmin);
+        Scalar upper(hmax, smax, vmax);
+        inRange(imgHSV, lower, upper, mask);
 
-    cvtColor(img, imgGRAY, COLOR_BGR2GRAY);
+        error = draw_centerPoints(mask, img);
 
-    error = draw_centerPoints(imgGRAY, img);
-
-    if(turn_flag == 0){
-        output = PID(error);
-        standardMove(output);
-    }
-    cout << "CNTTTTT: " << cnt << endl;
+        if(turn_flag == 0){
+            output = PID(error);
+            standardMove(output);
+        }
         waitKey(1);
     }
 
@@ -78,83 +83,55 @@ int main(void)
 }
 
 
-float draw_centerPoints(Mat gray, Mat im){
+float draw_centerPoints(Mat mask, Mat im){
 
     int right_num = 0, left_num = 0;
     int num = 0;
     int colour = 0;
-    Mat binary;
-    Size dsize=Size(160,100);
-    resize(im,im,dsize,0,0,INTER_AREA);
-
-    cvtColor(im, gray, COLOR_BGR2GRAY);
-    threshold(gray, binary, 65, 255, THRESH_BINARY_INV);
-
-    imshow("Img Bi", binary);
+    imshow("Img Bi", mask);
 
     int left = 0, right = 0, real_error = 0, x = 0, range = 0, grayValue = 0;
     char text[100] = "";
-
-        for (int i = 0; i < binary.cols; i++ )//for loop to read the grayvalue of each pixel point on row 250
-        {
-            grayValue = (int)binary.at<uchar>(55, i);//read the grayvalue of point ( 250, c )
-            if ( grayValue == 255 ){
-                x += i;//gain the sum of c
-                range ++;//calculate the number of pixel that satisfy grayvalue = 0
-            }
-        }
-
-        if (range == 0){
-            for(int j = 20; j < 50; j++){
-                for(int k = 0; k < binary.cols; k++){
-                    colour = (int)binary.at<uchar>(j, k);
-                    if(colour == 255){
-                        num++;
-                    }
+        for(int r = 40; r < 60; r++){
+            for (int i = 0; i < mask.cols; i++ )//for loop to read the grayvalue of each pixel point on row 250
+            {
+                grayValue = (int)mask.at<uchar>(r, i);//read the grayvalue of point ( 250, c )
+                if (grayValue == 255){
+                    x += i;//gain the sum of c
+                    range ++;//calculate the number of pixel that satisfy grayvalue = 0
                 }
             }
-            if(num > 50){
-                x = 80;
-                return 0;
-            }
-            else{
-                left_sharp_turn(cnt);
-                cnt++;
-            }
-        }
-        else{
-            x = x / range;
-            stop_flag = 0;
-            turn_flag = 0;
         }
 
-        for (int row = 50; row < 60; row++)
+         if(range == 0){
+          // x = 80;
+            left_turn();
+//          left_sharp_turn(turn_cnt);
+            stopMotor();
+         }
+         else{
+            x = x / range;
+            turn_flag = 0;
+         }
+
+        for (int row = 40; row < 70; row++)
         {
             for (int m = 0; m < x ;m++){
-                 int intensity1 = binary.at<uchar>(row, m);
+                 int intensity1 = mask.at<uchar>(row, m);
                  if(intensity1 < 100) {
                      left++;
                  }
             }
 
             for (int n = x; n < 160; n++){
-                 int intensity2 = binary.at<uchar>(row,n);
+                 int intensity2 = mask.at<uchar>(row,n);
                  if(intensity2 < 100) {
                      right++;
                  }
             }
         }
-            cout << "left" << left << "||" << "right" << right << endl;
-
-            if(right < 100){
-                right_rect_turn();
-            }
-            if(left < 100){
-                left_rect_turn();
-            }
-
         real_error = left - right;
-   //         cout << "Real Error" << real_error << endl;
+//      cout << "Real Error" << real_error << endl;
     return real_error;   //|200| - |1400|
 }
 
@@ -222,33 +199,23 @@ void standardMove(float output){
         if(rightMotorSpeed < 0)
         {
             rightMotorSpeed = rightMotorSpeed * 1.2;
-            if (rightMotorSpeed < -80) rightMotorSpeed = -80;
-            if (leftMotorSpeed > 70) leftMotorSpeed = 70;
+            if (rightMotorSpeed < -60) rightMotorSpeed = -60;
+            if (leftMotorSpeed > 80) leftMotorSpeed = 80;
             serialPrintf(robot, "#Barrff %03d %03d %03d %03d", -(int)rightMotorSpeed, -(int)rightMotorSpeed, (int)leftMotorSpeed, (int)leftMotorSpeed);
         }
 
-        printf("speed: %f; %f output:%f\n", leftMotorSpeed, rightMotorSpeed, output);
+        //printf("speed: %f; %f output:%f\n", leftMotorSpeed, rightMotorSpeed, output);
 }
 
 void stopMotor(void){
     serialPrintf(robot, "#ha");
 }
 
-// void right_sharp_turn(void){
-//     capture.release();
-//     serialPrintf(robot, "#Barrff %03d %03d %03d %03d", 50, 50, 10, 10);
-//     delay(200);
-//     serialPrintf(robot, "#Baffff %03d %03d %03d %03d", 0, 0, 0, 0);
-//     delay(5000);
-//     capture.open(0);
-
-// }
-
 void left_sharp_turn(int cnt){
     if(cnt % 2 == 1){
         capture.release();
         serialPrintf(robot, "#Baffrr %03d %03d %03d %03d", 50, 50, 40, 40);
-        delay(500);
+        delay(200);
         serialPrintf(robot, "#Baffff %03d %03d %03d %03d", 0, 0, 0, 0);
         delay(1000);
         capture.open(0);
@@ -267,25 +234,29 @@ void right_rect_turn(){
     cout << "righttttttttttttttttttttttttt!" << endl;
     capture.release();
     serialPrintf(robot, "#Barrff %03d %03d %03d %03d", 20, 20, 65, 65);
-    delay(800);
+    delay(300);
     serialPrintf(robot, "#Baffff %03d %03d %03d %03d", 0, 0, 0, 0);
     delay(5000);
-    capture.open(0);   
-    
+    capture.open(0);
+
 }
 
 void left_rect_turn(){
     cout << "leftTTTTTTTTTTTTTTTTTTTTTTTTTTTT" << endl;
     capture.release();
     serialPrintf(robot, "#Baffrr %03d %03d %03d %03d", 65, 65, 20, 20);
-    delay(800);
+    delay(300);
     serialPrintf(robot, "#Baffff %03d %03d %03d %03d", 0, 0, 0, 0);
     delay(5000);
     capture.open(0);
 }
 
-
-
+void left_turn(){
+    capture.release();
+    serialPrintf(robot, "#Baffrr %03d %03d %03d %03d", 55, 55, 35, 35);
+    delay(200);
+    capture.open(0);
+}
 
 
 

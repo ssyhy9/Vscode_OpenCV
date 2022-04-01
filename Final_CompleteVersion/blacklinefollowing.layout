@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_layout_file>
+	<FileVersion major="1" minor="0" />
+	<ActiveTarget name="Debug" />
+	<File name="tasks.cpp" open="1" top="0" tabpos="3" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="642" topLine="165" />
+		</Cursor>
+	</File>
+	<File name="image_compare.cpp" open="1" top="1" tabpos="4" split="0" active="1" splitpos="0" zoom_1="1" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="2441" topLine="54" />
+		</Cursor>
+		<Folding>
+			<Collapse line="106" />
+		</Folding>
+	</File>
+	<File name="tasks.h" open="1" top="0" tabpos="1" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="793" topLine="5" />
+		</Cursor>
+	</File>
+	<File name="main.h" open="1" top="0" tabpos="5" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="249" topLine="0" />
+		</Cursor>
+	</File>
+	<File name="main.cpp" open="1" top="0" tabpos="2" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="15032" topLine="302" />
+		</Cursor>
+		<Folding>
+			<Collapse line="130" />
+			<Collapse line="289" />
+		</Folding>
+	</File>
+	<File name="image_compare.h" open="1" top="0" tabpos="6" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="700" topLine="5" />
+		</Cursor>
+	</File>
+	<Target name="Debug" top="image_compare.cpp">
+		<File name="tasks.h" />
+		<File name="main.cpp" />
+		<File name="tasks.cpp" />
+		<File name="image_compare.cpp" />
+		<File name="main.h" />
+		<File name="image_compare.h" />
+	</Target>
+</CodeBlocks_layout_file>

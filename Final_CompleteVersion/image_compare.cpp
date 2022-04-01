@@ -13,38 +13,152 @@
 #include <wiringPi.h>
 #include <softPwm.h>
 
+using namespace cv;
+using namespace std;
+
 #include "image_compare.h"
+#include "main.h"
+#include "tasks.h"
 
 void task(void){
-    
-    softPwmWrite(PWM_PIN, 13);;  //up
-    delay(500);
-    capture.open(0);
+
+    correcting();
+
+    delay(80);
+    softPwmWrite(PWM_PIN,6);  //up
+    delay(700);
+    softPwmWrite(PWM_PIN, 0);
+    cout<<"UP_UP_UP_UP_UP_UP"<<endl;
+    delay(80);
+    capture.open(0); //因为拍照开相机
+    capture.set(CAP_PROP_FRAME_WIDTH, 1280);
+    capture.set(CAP_PROP_FRAME_HEIGHT, 1024);
+    capture.set(CAP_PROP_FPS, 30);
+
+    int i = 0;
 
      while(i<10) {
-            
+
       Mat img;
-      int task_code;
-          
+      int task_code = 0;
+
      capture.read(img);
-     transpose(img, img);
-     flip(img, img, 1);
-     transpose(img, img);
-     flip(img, img, 1);
-     //imshow("camera",img);
-      task_code = compare_task(img);//match 
-      cout<<task_code<<endl;
+
+    // imshow("camera",img);
+     cout<<"START COMPARE"<<endl;
+     task_code = compare_task(img);//match
+     cout<<task_code<<endl;
 
     if(task_code!=0){
+     cout<<"DO------TASK!"<<endl;
        active_task(task_code,img);
-       break; 
-    } 
+     cout<<"-----------------------DONE-----------------———"<<endl;
+       break;
+    } // do task
         i++;
-   }
-    capture.release();
-    softPwmWrite(PWM_PIN, 20);  //down
-    delay(500);
+        //waitKey(1);
+   } //拍十次照片
+
+    capture.release(); //做完任务 拍完了 重启一下
+    delay(100);
+    softPwmWrite(PWM_PIN, 12);  //down
+    delay(700);
+    softPwmWrite(PWM_PIN, 0);
+    cout<<"DOWN-DOWN-DOWN-DOWN"<<endl;
+     delay(100);
+    capture.open(0); // 开摄像头接着巡线
+    capture.set(CAP_PROP_FRAME_WIDTH, 640);
+    capture.set(CAP_PROP_FRAME_HEIGHT, 480);
+   // capture.set(CAP_PROP_FPS, 30);
+}
+
+void correcting(void)
+{
+    float Error = 0, output = 0;
+    Mat img, imgHSV, mask;
     capture.open(0);
+    capture.set(CAP_PROP_FRAME_WIDTH, 640);
+    capture.set(CAP_PROP_FRAME_HEIGHT, 480);
+
+    while( Error != 0 )
+    {
+
+        capture.read(img); //640 480
+
+        Size dsize=Size(160,100);
+        resize(img,img,dsize,0,0,INTER_AREA);
+        //imshow("Ori", img);
+        cvtColor(img, imgHSV, COLOR_BGR2HSV);
+
+        Scalar lower(hmin, smin, vmin);
+        Scalar upper(hmax, smax, vmax);
+        inRange(imgHSV, lower, upper, mask);
+
+        Error = back_center( mask );
+        output = PID(Error, normal_pid);
+        correct_move(output);
+    }
+
+    waitKey(1);
+    capture.release();
+}
+
+
+float back_center( Mat mask ){
+
+    int right_num = 0, left_num = 0;
+    int num = 0;
+    int colour = 0;
+   // imshow("Img Bi", mask);
+
+    int left = 0, right = 0, real_error = 0, x = 0, range = 0, grayValue = 0;
+
+        for(int r = 80; r < 90; r++){
+            for (int i = 0; i < mask.cols; i++ )//for loop to read the grayvalue of each pixel point on row 250
+            {
+                grayValue = (int)mask.at<uchar>(r, i);//read the grayvalue of point ( 250, c )
+                if (grayValue == 255){
+                    x += i;//gain the sum of c
+                    range ++;//calculate the number of pixel that satisfy grayvalue = 0
+                }
+            }
+        }
+
+         if(range == 0){
+          // x = 80;
+            left_turn();
+//          left_sharp_turn(turn_cnt);
+            stopMotor();
+         }
+         else{
+            x = x / range;
+            turn_flag = 0;
+         }
+
+        for (int row = 80; row < 90; row++)
+        {
+            for (int m = 0; m < x ;m++){
+                 int intensity1 = mask.at<uchar>(row, m);
+                 if(intensity1 < 100) {
+                     left++;
+                 }
+            }
+
+            for (int n = x; n < 160; n++){
+                 int intensity2 = mask.at<uchar>(row,n);
+                 if(intensity2 < 100) {
+                     right++;
+                 }
+            }
+        }
+        real_error = left - right;
+      cout << "Real Error" << real_error << endl;
+    return real_error;   //|200| - |1400|
+}
+
+void correct_move( float output )
+{
+    serialPrintf(robot, "#Baffrr %03d %03d %03d %03d", (int)output, (int)output, (int)output, (int)output);
 }
 
 //********************************************************* Choose Task ***************************************************
@@ -131,13 +245,13 @@ library12_binary=~library12_binary;
 while(1) {
 
      MP1=compareImages(detect,library1_binary);
-      if( MP1 > 83 ) {
+      if( MP1 > 75 ) {
         num=1;
         MP=MP1;
         break;
       }
      MP2=compareImages(detect,library2_binary);
-      if( MP2 > 83 ) {
+      if( MP2 > 75 ) {
         num=2;
         MP=MP2;
         break;
@@ -167,13 +281,13 @@ while(1) {
         break;
       }
        MP7=compareImages(detect,library7_binary);
-      if( MP7 > 75) {
+      if( MP7 > 70) {
         num=7;
         MP=MP7;
         break;
       }
        MP8=compareImages(detect,library8_binary);
-      if( MP8 > 75) {
+      if( MP8 > 70) {
         num=8;
         MP=MP8;
         break;
@@ -197,7 +311,7 @@ while(1) {
         break;
       }
        MP12=compareImages(detect,library12_binary);
-      if( MP12 > 60) {
+      if( MP12 > 50) {
         num=12;
         MP=MP12;
         break;
@@ -209,59 +323,67 @@ while(1) {
 }
     cout<<"MP:"<<MP<<endl;
     return num;
-} 
+}
 
 int compare_task(Mat frame) {
 
      int num1,num2, tape, t;
      int area_max=0;
-     Mat frame1,frame2;  
-     Mat image1,image2;  
+     Mat frame1,frame2;
+     Mat image1,image2;
      Mat dstlmg(frame.size(),CV_8UC3,Scalar::all(0));
      int height=frame.rows;
      int width=frame.cols;
 
     cvtColor(frame, frame1, COLOR_BGR2HSV);
-    inRange(frame1,Scalar(148,94,86),Scalar(168,255,255),frame2);
-    //imshow("frame2",frame2); //二值化后图像 
-    
+    inRange(frame1,Scalar(150,100,100),Scalar(170,255,255),frame2);
+    //imshow("frame2",frame2); //二值化后图像
+
     vector<vector<Point>> contours;
     vector<Point> point;
     vector<Vec4i> hireachy;
     findContours(frame2, contours, hireachy, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE, Point());
     vector<vector<Point>> contours_poly(contours.size());
     cout<<"contours size:"<<contours.size()<<endl;//轮廓数目
-    
+
+     if (contours.size() >5) {
     for (int i=0;i<contours.size();i++)
     {
-        int area = contourArea(contours[i]); 
+        int area = contourArea(contours[i]);
 
         if( contourArea(contours[i]) > area_max) {
             area_max=contourArea(contours[i]);
-            t=i; 
+            t=i;
         }
-        approxPolyDP(contours[i],contours_poly[i],30,true); 
+        approxPolyDP(contours[i],contours_poly[i],30,true);
         drawContours(dstlmg,contours_poly,i,Scalar(0,255,255),2,8);
         // imshow("dst",dstlmg); //轮廓图片
     }
-  
+
     Point2f AffinePoints1[4] = {  Point2f(contours_poly[t][1]),Point2f(contours_poly[t][0]),Point2f(contours_poly[t][2]),Point2f(contours_poly[t][3]) };
     Point2f AffinePoints2[4] = {  Point2f(contours_poly[t][0]),Point2f(contours_poly[t][3]),Point2f(contours_poly[t][1]),Point2f(contours_poly[t][2]) };
     Point2f AffinePoints0[4] = { Point2f(0, 0), Point2f(width,0), Point2f(0,height), Point2f(width, height) };
     Mat dst_perspective1 = PerspectiveTrans(frame2, AffinePoints1, AffinePoints0);
     Mat dst_perspective2 = PerspectiveTrans(frame2, AffinePoints2, AffinePoints0);
-    resize(dst_perspective1,image1,Size(320,240),0,0,INTER_AREA); 
+    resize(dst_perspective1,image1,Size(320,240),0,0,INTER_AREA);
     resize(dst_perspective2,image2,Size(320,240),0,0,INTER_AREA);
 
   // imshow("perspective1", image1); //转换图片1
   // imshow("perspective2", image2); //转换图片2
 
-    num1=library(image1); 
+    num1=library(image1);
     num2=library(image2);
 
-    if (num1 > 0) {tape=num1;}
-    else if (num2 > 0){tape=num2;}
-    else{ tape=0;}
+    if (num1 > 0) {tape = num1;}
+    else if (num2 > 0){tape = num2;}
+    else{ tape = 0;}
+     } //if contours !=0
+
+        else{
+        tape = 0;
+       } //if contours =0
+
     //cout<<"tape1:"<<tape<<endl;
     return tape;
 }
+

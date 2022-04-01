@@ -15,7 +15,7 @@
 #define PWM_PIN 0
 #define leftMotorBaseSpeed 25
 #define rightMotorBaseSpeed 25
-#define min_speed -50  
+#define min_speed -50
 #define max_speed 50
 
 using namespace cv;
@@ -65,8 +65,8 @@ vector<vector<int>> myColours{
     {132, 168, 120, 179, 236, 226} //pink     i = 1
 };
 
-float Kp = 0.03, Ki = 0.00, Kd = 0.001;    //encoder output
-float leftMotorSpeed = 0; // Variables to hold the current motor speed (+-100%)
+float Kp = 0.03, Ki = 0.00, Kd = 0.001;   
+float leftMotorSpeed = 0; 
 float rightMotorSpeed = 0;
 int robot;
 
@@ -429,7 +429,7 @@ void left_sharp_turn(void){
 //********************************************************Task***************************************************************************
 void task(void){
     
-    softPwmWrite(PWM_PIN, 13);;  //up
+    softPwmWrite(PWM_PIN, 13);  //up
     delay(500);
     capture.open(0);
 
@@ -459,7 +459,7 @@ void task(void){
     capture.open(0);
 }
 
-//*********************************************************Choose Task***************************************************
+//********************************************************* Choose Task ***************************************************
 float compareImages(Mat cameralmage, Mat librarySymbol){
     float matchPercent = 100 -(100/((float)librarySymbol.cols*(float)librarySymbol.rows) *(2*(float)countNonZero(librarySymbol^cameralmage)));
     return matchPercent;
@@ -622,6 +622,7 @@ while(1) {
     cout<<"MP:"<<MP<<endl;
     return num;
 } 
+
 int compare_task(Mat frame) {
 
      int num1,num2, tape, t;
@@ -896,6 +897,7 @@ int count_shape(Mat frame){
     
     getContours(image3);
    }
+
 void getContours(Mat src) {
 
     int Tri_num=0,Rect_num=0,Cir_num=0;

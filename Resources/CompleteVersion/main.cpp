@@ -12,17 +12,14 @@
 #include <wiringPi.h>
 #include <softPwm.h>
 
-#define PWM_PIN 0
-#define leftMotorBaseSpeed 25
-#define rightMotorBaseSpeed 25
-#define min_speed -50
-#define max_speed 50
+
 
 using namespace cv;
 using namespace std;
 
 #include "image_compare.h"
 #include "tasks.h"
+#include "main.h"
 
 
 void findColour(Mat img);
@@ -85,8 +82,8 @@ int main(void)
 
         findColour(img);
 
-        if(colour_flag == 0 && turn_flag == 0){   
-            error = draw_centerPoints(imgGRAY, img); 
+        if(colour_flag == 0 && turn_flag == 0){
+            error = draw_centerPoints(imgGRAY, img);
             float output = PID(error); // Calculate the PID output.
             standardMove(output);
         }

@@ -6,20 +6,41 @@
 using namespace cv;
 using namespace std;
 
+void stop(void);
+
+VideoCapture cap;
+int cnt = 0;
+
 int main()
 {
-    VideoCapture cap(0);
+    cap.open(0);
     Mat img, imgHSV;
+    
 
     while (true)
     {
+
         cap.read(img);
 
         cvtColor(img, imgHSV, COLOR_BGR2HSV);
 
         imshow("IMG", img);
         imshow("IMG HSV", imgHSV);
-        waitKey(1);
+        waitKey(10);
+        cnt ++;
+        cout << cnt << endl;
+
+        if(cnt == 1000){
+            stop();
+        }
+        
     }
     return 0;
+}
+
+void stop(void){
+    cap.release();
+    waitKey(5000);
+    cap.open(0);
+    cnt = 0;
 }
